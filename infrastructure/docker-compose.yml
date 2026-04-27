@@ -1,17 +1,9 @@
-version: "3.9"
-
 services:
-  # ── Infrastructure ──────────────────────────────────────────────────────────
   eureka:
     build: ../eureka-server
     container_name: eureka-server
     ports:
       - "8761:8761"
-    healthcheck:
-      test: ["CMD","curl","-f","http://localhost:8761/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
   config-server:
     build: ../config-server
@@ -19,10 +11,9 @@ services:
     ports:
       - "8888:8888"
     depends_on:
-      eureka:
-        condition: service_healthy
+      - eureka
     environment:
-      EUREKA_URL: http://eureka:8761/eureka/
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka/
 
   api-gateway:
     build: ../api-gateway
@@ -33,10 +24,9 @@ services:
       - eureka
       - config-server
     environment:
-      EUREKA_URL: http://eureka:8761/eureka/
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka/
       JWT_SECRET: bookstore-super-secret-key-for-jwt-authentication-2024
 
-  # ── Databases ───────────────────────────────────────────────────────────────
   user-db:
     image: postgres:16-alpine
     container_name: user-db
@@ -151,7 +141,6 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
-  # ── Microservices ────────────────────────────────────────────────────────────
   user-service:
     build: ../services/user-service
     container_name: user-service
@@ -162,12 +151,13 @@ services:
       - eureka
       - kafka
     environment:
-      DB_USER: bookstore
-      DB_PASS: bookstore123
       SPRING_DATASOURCE_URL: jdbc:postgresql://user-db:5432/user_db
-      EUREKA_URL: http://eureka:8761/eureka/
-      KAFKA_SERVERS: kafka:29092
+      SPRING_DATASOURCE_USERNAME: bookstore
+      SPRING_DATASOURCE_PASSWORD: bookstore123
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka/
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       JWT_SECRET: bookstore-super-secret-key-for-jwt-authentication-2024
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
 
   admin-service:
     build: ../services/admin-service
@@ -178,11 +168,12 @@ services:
       - admin-db
       - eureka
     environment:
-      DB_USER: bookstore
-      DB_PASS: bookstore123
       SPRING_DATASOURCE_URL: jdbc:postgresql://admin-db:5432/admin_db
-      EUREKA_URL: http://eureka:8761/eureka/
+      SPRING_DATASOURCE_USERNAME: bookstore
+      SPRING_DATASOURCE_PASSWORD: bookstore123
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka/
       JWT_SECRET: bookstore-super-secret-key-for-jwt-authentication-2024
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
 
   product-service:
     build: ../services/product-service
@@ -193,11 +184,12 @@ services:
       - product-db
       - eureka
     environment:
-      DB_USER: bookstore
-      DB_PASS: bookstore123
       SPRING_DATASOURCE_URL: jdbc:postgresql://product-db:5432/product_db
-      EUREKA_URL: http://eureka:8761/eureka/
+      SPRING_DATASOURCE_USERNAME: bookstore
+      SPRING_DATASOURCE_PASSWORD: bookstore123
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka/
       JWT_SECRET: bookstore-super-secret-key-for-jwt-authentication-2024
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
 
   cart-service:
     build: ../services/cart-service
@@ -208,9 +200,11 @@ services:
       - redis
       - eureka
     environment:
-      REDIS_HOST: redis
-      EUREKA_URL: http://eureka:8761/eureka/
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka/
       JWT_SECRET: bookstore-super-secret-key-for-jwt-authentication-2024
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
 
   wishlist-service:
     build: ../services/wishlist-service
@@ -221,11 +215,12 @@ services:
       - wishlist-db
       - eureka
     environment:
-      DB_USER: bookstore
-      DB_PASS: bookstore123
       SPRING_DATASOURCE_URL: jdbc:postgresql://wishlist-db:5432/wishlist_db
-      EUREKA_URL: http://eureka:8761/eureka/
+      SPRING_DATASOURCE_USERNAME: bookstore
+      SPRING_DATASOURCE_PASSWORD: bookstore123
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka/
       JWT_SECRET: bookstore-super-secret-key-for-jwt-authentication-2024
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
 
   customer-service:
     build: ../services/customer-service
@@ -236,11 +231,12 @@ services:
       - customer-db
       - eureka
     environment:
-      DB_USER: bookstore
-      DB_PASS: bookstore123
       SPRING_DATASOURCE_URL: jdbc:postgresql://customer-db:5432/customer_db
-      EUREKA_URL: http://eureka:8761/eureka/
+      SPRING_DATASOURCE_USERNAME: bookstore
+      SPRING_DATASOURCE_PASSWORD: bookstore123
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka/
       JWT_SECRET: bookstore-super-secret-key-for-jwt-authentication-2024
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
 
   order-service:
     build: ../services/order-service
@@ -252,12 +248,13 @@ services:
       - eureka
       - kafka
     environment:
-      DB_USER: bookstore
-      DB_PASS: bookstore123
       SPRING_DATASOURCE_URL: jdbc:postgresql://order-db:5432/order_db
-      EUREKA_URL: http://eureka:8761/eureka/
-      KAFKA_SERVERS: kafka:29092
+      SPRING_DATASOURCE_USERNAME: bookstore
+      SPRING_DATASOURCE_PASSWORD: bookstore123
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka/
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       JWT_SECRET: bookstore-super-secret-key-for-jwt-authentication-2024
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
 
   feedback-service:
     build: ../services/feedback-service
@@ -268,12 +265,13 @@ services:
       - feedback-db
       - eureka
     environment:
-      DB_USER: bookstore
-      DB_PASS: bookstore123
       SPRING_DATASOURCE_URL: jdbc:postgresql://feedback-db:5432/feedback_db
-      EUREKA_URL: http://eureka:8761/eureka/
-      KAFKA_SERVERS: kafka:29092
+      SPRING_DATASOURCE_USERNAME: bookstore
+      SPRING_DATASOURCE_PASSWORD: bookstore123
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka/
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       JWT_SECRET: bookstore-super-secret-key-for-jwt-authentication-2024
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
 
   notification-service:
     build: ../services/notification-service
@@ -284,8 +282,9 @@ services:
       - eureka
       - kafka
     environment:
-      EUREKA_URL: http://eureka:8761/eureka/
-      KAFKA_SERVERS: kafka:29092
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka:8761/eureka/
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_CONFIG_IMPORT: "optional:configserver:http://config-server:8888"
 
 volumes:
   user_data:
